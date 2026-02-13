@@ -15,8 +15,24 @@ const PORT = process.env.PORT || 3000;
 app.set('trust proxy', 1); // Trust first proxy (important for Vercel/Cloud)
 
 // CORS Configuration - MUST come before helmet
+const allowedOrigins = [
+    process.env.CORS_ORIGIN || 'https://mess-party-frontend-wi5f.vercel.app',
+    'http://localhost:5174',  // Vite dev server (common port)
+    'http://localhost:5173',  // Vite default port
+    'http://localhost:3001'   // Alternative local port
+];
+
 const corsOptions = {
-    origin: process.env.CORS_ORIGIN || 'https://mess-party-frontend-wi5f.vercel.app',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, Postman, or curl)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'x-session-token', 'x-passkey'],
@@ -162,6 +178,16 @@ app.get('/api/party/status', (req, res) => {
         sessionValid = partyState.adminSession === clientToken || partyState.guestSessions.has(clientToken);
     }
 
+    // If a token was provided but is no longer valid, return 401
+    // This triggers automatic logout on the frontend (detected on next poll)
+    if (clientToken && !sessionValid) {
+        return res.status(401).json({
+            error: 'Session invalidated',
+            sessionValid: false,
+            message: 'Party has been reset'
+        });
+    }
+
     res.json({
         guestCount: isLimitReached ? REQUIRED_GUESTS : partyState.guestSessions.size,
         requiredGuests: REQUIRED_GUESTS,
@@ -204,26 +230,31 @@ app.post('/api/party/reset', (req, res) => {
     });
 });
 
-// Party: Logout (resets party if admin logs out)
+// Party: Logout (resets party if admin logs out - CASCADE)
 app.post('/api/party/logout', (req, res) => {
     const clientToken = req.headers['x-session-token'];
 
     // Check if this is the admin logging out
     if (clientToken && partyState.adminSession === clientToken) {
-        // Reset the entire party state
+        // Reset the entire party state - ALL sessions invalidated
+        // Guests will detect this on their next poll (within 2 seconds)
+        // because their token will no longer match any valid session
         partyState = {
             adminSession: null,
             guestSessions: new Set(),
             limitReached: false
         };
 
+        console.log('Admin logout cascade: All sessions invalidated');
+
         return res.json({
             success: true,
-            message: 'Admin logged out, party reset'
+            allSessionsInvalidated: true,
+            message: 'All sessions invalidated'
         });
     }
 
-    // If it's a guest, just acknowledge
+    // If it's a guest, just remove their session
     if (clientToken && partyState.guestSessions.has(clientToken)) {
         partyState.guestSessions.delete(clientToken);
         return res.json({
@@ -232,6 +263,7 @@ app.post('/api/party/logout', (req, res) => {
         });
     }
 
+    // Token not found (already invalidated or never existed)
     res.json({ success: true, message: 'Logged out' });
 });
 
