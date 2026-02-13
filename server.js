@@ -42,7 +42,16 @@ let partyState = {
     limitReached: false      // Sticky flag: true once we hit 5 users
 };
 
-app.use(cors());
+// CORS Configuration
+const corsOptions = {
+    origin: process.env.CORS_ORIGIN || 'https://mess-party-frontend-wi5f.vercel.app',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'x-session-token', 'x-passkey'],
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Party: Authenticate user and determine role
