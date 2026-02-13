@@ -13,7 +13,24 @@ const PORT = process.env.PORT || 3000;
 
 // Security Configurations
 app.set('trust proxy', 1); // Trust first proxy (important for Vercel/Cloud)
-app.use(helmet()); // Secure HTTP Headers
+
+// CORS Configuration - MUST come before helmet
+const corsOptions = {
+    origin: process.env.CORS_ORIGIN || 'https://mess-party-frontend-wi5f.vercel.app',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'x-session-token', 'x-passkey'],
+    exposedHeaders: ['x-session-token'],
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Helmet - Configure to not interfere with CORS
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false // Disable CSP to avoid CORS conflicts
+}));
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -42,16 +59,6 @@ let partyState = {
     limitReached: false      // Sticky flag: true once we hit 5 users
 };
 
-// CORS Configuration
-const corsOptions = {
-    origin: process.env.CORS_ORIGIN || 'https://mess-party-frontend-wi5f.vercel.app',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'x-session-token', 'x-passkey'],
-    optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
 app.use(express.json());
 
 // Party: Authenticate user and determine role
