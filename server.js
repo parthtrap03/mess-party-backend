@@ -172,7 +172,9 @@ app.get('/api/party/debug', (req, res) => {
         adminToken: partyState.adminSession ? partyState.adminSession.substring(0, 8) + '...' : null,
         guestCount: partyState.guestSessions.size,
         limitReached: partyState.limitReached,
-        totalUsers: partyState.guestSessions.size + (partyState.adminSession ? 1 : 0)
+        totalUsers: partyState.guestSessions.size + (partyState.adminSession ? 1 : 0),
+        corsOrigin: process.env.CORS_ORIGIN || 'https://mess-party-frontend-wi5f.vercel.app',
+        nodeEnv: process.env.NODE_ENV || 'development'
     });
 });
 
