@@ -19,6 +19,7 @@ const allowedOrigins = [
     process.env.CORS_ORIGIN || 'https://mess-party-frontend-wi5f.vercel.app',
     'https://mess-party-frontend-cy4f.vercel.app',  // Previous Vercel deployment
     'https://mess-party-frontend-1nxs.vercel.app',  // Current Vercel deployment
+    'http://localhost:5175',  // User's current local frontend port
     'http://localhost:5174',  // Vite dev server (common port)
     'http://localhost:5173',  // Vite default port
     'http://localhost:5176',  // Safety fallback
