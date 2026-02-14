@@ -17,6 +17,7 @@ app.set('trust proxy', 1); // Trust first proxy (important for Vercel/Cloud)
 // CORS Configuration - MUST come before helmet
 const allowedOrigins = [
     process.env.CORS_ORIGIN || 'https://mess-party-frontend-wi5f.vercel.app',
+    'https://mess-party-frontend-cy4f.vercel.app',  // New Vercel deployment
     'http://localhost:5175',  // User's current local frontend port
     'http://localhost:5174',  // Vite dev server (common port)
     'http://localhost:5173',  // Vite default port
